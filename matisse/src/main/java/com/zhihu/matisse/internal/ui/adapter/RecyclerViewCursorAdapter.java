@@ -25,7 +25,7 @@ public abstract class RecyclerViewCursorAdapter<VH extends RecyclerView.ViewHold
     private Cursor mCursor;
     private int mRowIDColumn;
 
-    RecyclerViewCursorAdapter(Cursor c) {
+    public RecyclerViewCursorAdapter(Cursor c) {
         setHasStableIds(true);
         swapCursor(c);
     }

@@ -14,17 +14,8 @@
   See the License for the specific language governing permissions and
   limitations under the License.
   -->
-<manifest
+<com.zhihu.matisseBlockdit.internal.ui.widget.BditMediaGrid
     xmlns:android="http://schemas.android.com/apk/res/android"
-    package="com.zhihu.matisse">
-
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-
-    <application>
-        <activity android:name="com.zhihu.matisse.ui.MatisseActivity"/>
-        <activity android:name="com.zhihu.matisseBlockdit.ui.BditMatisseActivity"/>
-        <activity android:name="com.zhihu.matisse.internal.ui.AlbumPreviewActivity"/>
-        <activity android:name="com.zhihu.matisse.internal.ui.SelectedPreviewActivity"/>
-    </application>
-</manifest>
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:foreground="?selectableItemBackground"/>

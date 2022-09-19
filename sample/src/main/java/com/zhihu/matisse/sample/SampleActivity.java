@@ -55,6 +55,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        findViewById(R.id.ltman).setOnClickListener(this);
         findViewById(R.id.zhihu).setOnClickListener(this);
         findViewById(R.id.dracula).setOnClickListener(this);
         findViewById(R.id.only_gif).setOnClickListener(this);
@@ -89,6 +90,21 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
             imageEngine = new GlideEngine();
         }
         switch (v.getId()) {
+            case R.id.ltman:
+                Matisse.from(SampleActivity.this)
+                        .choose(MimeType.of(MimeType.JPEG, MimeType.PNG))
+                        .countable(true)
+                        .theme(R.style.Matisse_Blockdit)
+                        .capture(true)
+                        .captureStrategy(
+                                new CaptureStrategy(true, "com.zhihu.matisse.sample.fileprovider", "test"))
+                        .maxSelectable(10)
+                        .gridExpectedSize(getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
+                        .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED)
+                        .thumbnailScale(1f)
+                        .showPreview(false)
+                        .forResult(REQUEST_CODE_CHOOSE);
+                break;
             case R.id.zhihu:
                 Matisse.from(SampleActivity.this)
                         .choose(MimeType.ofImage(), false)
@@ -98,8 +114,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                                 new CaptureStrategy(true, "com.zhihu.matisse.sample.fileprovider", "test"))
                         .maxSelectable(9)
                         .addFilter(new GifSizeFilter(320, 320, 5 * Filter.K * Filter.K))
-                        .gridExpectedSize(
-                                getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
+                        .gridExpectedSize(getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
                         .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
                         .thumbnailScale(0.85f)
                         .imageEngine(imageEngine)

@@ -13,7 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.zhihu.matisse.ui;
+package com.zhihu.matisseBlockdit.ui;
+
+import static com.zhihu.matisse.ui.MatisseActivity.EXTRA_RESULT_IS_CAPTURE;
+import static com.zhihu.matisse.ui.MatisseActivity.EXTRA_RESULT_ORIGINAL_ENABLE;
+import static com.zhihu.matisse.ui.MatisseActivity.EXTRA_RESULT_SELECTION;
+import static com.zhihu.matisse.ui.MatisseActivity.EXTRA_RESULT_SELECTION_PATH;
 
 import android.app.Activity;
 import android.content.Intent;
@@ -26,18 +31,21 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.appcompat.app.ActionBar;
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.appcompat.widget.Toolbar;
-
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
+
+import androidx.annotation.NonNull;
+import androidx.annotation.Nullable;
+import androidx.appcompat.app.ActionBar;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.widget.Toolbar;
+import androidx.core.content.ContextCompat;
+import androidx.fragment.app.Fragment;
 
 import com.zhihu.matisse.R;
 import com.zhihu.matisse.internal.entity.Album;
@@ -47,34 +55,28 @@ import com.zhihu.matisse.internal.model.AlbumCollection;
 import com.zhihu.matisse.internal.model.SelectedItemCollection;
 import com.zhihu.matisse.internal.ui.AlbumPreviewActivity;
 import com.zhihu.matisse.internal.ui.BasePreviewActivity;
-import com.zhihu.matisse.internal.ui.MediaSelectionFragment;
-import com.zhihu.matisse.internal.ui.SelectedPreviewActivity;
-import com.zhihu.matisse.internal.ui.adapter.AlbumMediaAdapter;
+import com.zhihu.matisseBlockdit.internal.ui.BditMediaSelectionFragment;
 import com.zhihu.matisse.internal.ui.adapter.AlbumsAdapter;
+import com.zhihu.matisseBlockdit.internal.ui.adapter.BditAlbumMediaAdapter;
 import com.zhihu.matisse.internal.ui.widget.AlbumsSpinner;
-import com.zhihu.matisse.internal.ui.widget.CheckRadioView;
-import com.zhihu.matisse.internal.ui.widget.IncapableDialog;
 import com.zhihu.matisse.internal.utils.MediaStoreCompat;
 import com.zhihu.matisse.internal.utils.PathUtils;
-import com.zhihu.matisse.internal.utils.PhotoMetadataUtils;
-
 import com.zhihu.matisse.internal.utils.SingleMediaScanner;
+
 import java.util.ArrayList;
 
 /**
  * Main Activity to display albums and media content (images/videos) in each album
  * and also support media selecting operations.
  */
-public class MatisseActivity extends AppCompatActivity implements
-        AlbumCollection.AlbumCallbacks, AdapterView.OnItemSelectedListener,
-        MediaSelectionFragment.SelectionProvider, View.OnClickListener,
-        AlbumMediaAdapter.CheckStateListener, AlbumMediaAdapter.OnMediaClickListener,
-        AlbumMediaAdapter.OnPhotoCapture {
+public class BditMatisseActivity extends AppCompatActivity
+        implements AlbumCollection.AlbumCallbacks,
+        AdapterView.OnItemSelectedListener,
+        BditMediaSelectionFragment.SelectionProvider,
+        BditAlbumMediaAdapter.CheckStateListener,
+        BditAlbumMediaAdapter.OnMediaClickListener,
+        BditAlbumMediaAdapter.OnPhotoCapture {
 
-    public static final String EXTRA_RESULT_SELECTION = "extra_result_selection";
-    public static final String EXTRA_RESULT_SELECTION_PATH = "extra_result_selection_path";
-    public static final String EXTRA_RESULT_ORIGINAL_ENABLE = "extra_result_original_enable";
-    public static final String EXTRA_RESULT_IS_CAPTURE = "extra_result_is_capture";
     private static final int REQUEST_CODE_PREVIEW = 23;
     private static final int REQUEST_CODE_CAPTURE = 24;
     public static final String CHECK_STATE = "checkState";
@@ -85,14 +87,12 @@ public class MatisseActivity extends AppCompatActivity implements
 
     private AlbumsSpinner mAlbumsSpinner;
     private AlbumsAdapter mAlbumsAdapter;
-    private TextView mButtonPreview;
-    private TextView mButtonApply;
     private View mContainer;
     private View mEmptyView;
 
-    private LinearLayout mOriginalLayout;
-    private CheckRadioView mOriginal;
     private boolean mOriginalEnable;
+
+    private MenuItem optionMenu = null;
 
     @Override
     protected void onCreate(@Nullable Bundle savedInstanceState) {
@@ -105,7 +105,7 @@ public class MatisseActivity extends AppCompatActivity implements
             finish();
             return;
         }
-        setContentView(R.layout.activity_matisse);
+        setContentView(R.layout.activity_bdit_matisse);
 
         if (mSpec.needOrientationRestriction()) {
             setRequestedOrientation(mSpec.orientation);
@@ -123,27 +123,20 @@ public class MatisseActivity extends AppCompatActivity implements
         ActionBar actionBar = getSupportActionBar();
         actionBar.setDisplayShowTitleEnabled(false);
         actionBar.setDisplayHomeAsUpEnabled(true);
+        actionBar.setHomeAsUpIndicator(ContextCompat.getDrawable(this, R.drawable.ic_bdit_cancel_nav));
         Drawable navigationIcon = toolbar.getNavigationIcon();
         TypedArray ta = getTheme().obtainStyledAttributes(new int[]{R.attr.album_element_color});
         int color = ta.getColor(0, 0);
         ta.recycle();
         navigationIcon.setColorFilter(color, PorterDuff.Mode.SRC_IN);
 
-        mButtonPreview = (TextView) findViewById(R.id.button_preview);
-        mButtonApply = (TextView) findViewById(R.id.button_apply);
-        mButtonPreview.setOnClickListener(this);
-        mButtonApply.setOnClickListener(this);
         mContainer = findViewById(R.id.container);
         mEmptyView = findViewById(R.id.empty_view);
-        mOriginalLayout = findViewById(R.id.originalLayout);
-        mOriginal = findViewById(R.id.original);
-        mOriginalLayout.setOnClickListener(this);
 
         mSelectedCollection.onCreate(savedInstanceState);
         if (savedInstanceState != null) {
             mOriginalEnable = savedInstanceState.getBoolean(CHECK_STATE);
         }
-        updateBottomToolbar();
 
         mAlbumsAdapter = new AlbumsAdapter(this, null, false);
         mAlbumsSpinner = new AlbumsSpinner(this);
@@ -157,7 +150,7 @@ public class MatisseActivity extends AppCompatActivity implements
     }
 
     @Override
-    protected void onSaveInstanceState(Bundle outState) {
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
         super.onSaveInstanceState(outState);
         mSelectedCollection.onSaveInstanceState(outState);
         mAlbumCollection.onSaveInstanceState(outState);
@@ -178,6 +171,19 @@ public class MatisseActivity extends AppCompatActivity implements
             onBackPressed();
             return true;
         }
+
+        if (item.getItemId() == R.id.action_next) {
+            Intent result = new Intent();
+            ArrayList<Uri> selectedUris = (ArrayList<Uri>) mSelectedCollection.asListOfUri();
+            result.putParcelableArrayListExtra(EXTRA_RESULT_SELECTION, selectedUris);
+            ArrayList<String> selectedPaths = (ArrayList<String>) mSelectedCollection.asListOfString();
+            result.putStringArrayListExtra(EXTRA_RESULT_SELECTION_PATH, selectedPaths);
+            result.putExtra(EXTRA_RESULT_ORIGINAL_ENABLE, mOriginalEnable);
+            setResult(RESULT_OK, result);
+            finish();
+            return true;
+        }
+
         return super.onOptionsItemSelected(item);
     }
 
@@ -217,12 +223,11 @@ public class MatisseActivity extends AppCompatActivity implements
                 finish();
             } else {
                 mSelectedCollection.overwrite(selected, collectionType);
-                Fragment mediaSelectionFragment = getSupportFragmentManager().findFragmentByTag(
-                        MediaSelectionFragment.class.getSimpleName());
-                if (mediaSelectionFragment instanceof MediaSelectionFragment) {
-                    ((MediaSelectionFragment) mediaSelectionFragment).refreshMediaGrid();
+                Fragment bditMediaSelectionFragment = getSupportFragmentManager().findFragmentByTag(
+                        BditMediaSelectionFragment.class.getSimpleName());
+                if (bditMediaSelectionFragment instanceof BditMediaSelectionFragment) {
+                    ((BditMediaSelectionFragment) bditMediaSelectionFragment).refreshMediaGrid();
                 }
-                updateBottomToolbar();
             }
         } else if (requestCode == REQUEST_CODE_CAPTURE) {
             // Just pass the data back to previous calling Activity.
@@ -238,112 +243,11 @@ public class MatisseActivity extends AppCompatActivity implements
             result.putExtra(EXTRA_RESULT_IS_CAPTURE, true);
             setResult(RESULT_OK, result);
             if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP)
-                MatisseActivity.this.revokeUriPermission(contentUri,
+                BditMatisseActivity.this.revokeUriPermission(contentUri,
                         Intent.FLAG_GRANT_WRITE_URI_PERMISSION | Intent.FLAG_GRANT_READ_URI_PERMISSION);
 
-            new SingleMediaScanner(this.getApplicationContext(), path, new SingleMediaScanner.ScanListener() {
-                @Override public void onScanFinish() {
-                    Log.i("SingleMediaScanner", "scan finish!");
-                }
-            });
+            new SingleMediaScanner(this.getApplicationContext(), path, () -> Log.i("SingleMediaScanner", "scan finish!"));
             finish();
-        }
-    }
-
-    private void updateBottomToolbar() {
-
-        int selectedCount = mSelectedCollection.count();
-        if (selectedCount == 0) {
-            mButtonPreview.setEnabled(false);
-            mButtonApply.setEnabled(false);
-            mButtonApply.setText(getString(R.string.button_apply_default));
-        } else if (selectedCount == 1 && mSpec.singleSelectionModeEnabled()) {
-            mButtonPreview.setEnabled(true);
-            mButtonApply.setText(R.string.button_apply_default);
-            mButtonApply.setEnabled(true);
-        } else {
-            mButtonPreview.setEnabled(true);
-            mButtonApply.setEnabled(true);
-            mButtonApply.setText(getString(R.string.button_apply, selectedCount));
-        }
-
-
-        if (mSpec.originalable) {
-            mOriginalLayout.setVisibility(View.VISIBLE);
-            updateOriginalState();
-        } else {
-            mOriginalLayout.setVisibility(View.INVISIBLE);
-        }
-
-
-    }
-
-
-    private void updateOriginalState() {
-        mOriginal.setChecked(mOriginalEnable);
-        if (countOverMaxSize() > 0) {
-
-            if (mOriginalEnable) {
-                IncapableDialog incapableDialog = IncapableDialog.newInstance("",
-                        getString(R.string.error_over_original_size, mSpec.originalMaxSize));
-                incapableDialog.show(getSupportFragmentManager(),
-                        IncapableDialog.class.getName());
-
-                mOriginal.setChecked(false);
-                mOriginalEnable = false;
-            }
-        }
-    }
-
-
-    private int countOverMaxSize() {
-        int count = 0;
-        int selectedCount = mSelectedCollection.count();
-        for (int i = 0; i < selectedCount; i++) {
-            Item item = mSelectedCollection.asList().get(i);
-
-            if (item.isImage()) {
-                float size = PhotoMetadataUtils.getSizeInMB(item.size);
-                if (size > mSpec.originalMaxSize) {
-                    count++;
-                }
-            }
-        }
-        return count;
-    }
-
-    @Override
-    public void onClick(View v) {
-        if (v.getId() == R.id.button_preview) {
-            Intent intent = new Intent(this, SelectedPreviewActivity.class);
-            intent.putExtra(BasePreviewActivity.EXTRA_DEFAULT_BUNDLE, mSelectedCollection.getDataWithBundle());
-            intent.putExtra(BasePreviewActivity.EXTRA_RESULT_ORIGINAL_ENABLE, mOriginalEnable);
-            startActivityForResult(intent, REQUEST_CODE_PREVIEW);
-        } else if (v.getId() == R.id.button_apply) {
-            Intent result = new Intent();
-            ArrayList<Uri> selectedUris = (ArrayList<Uri>) mSelectedCollection.asListOfUri();
-            result.putParcelableArrayListExtra(EXTRA_RESULT_SELECTION, selectedUris);
-            ArrayList<String> selectedPaths = (ArrayList<String>) mSelectedCollection.asListOfString();
-            result.putStringArrayListExtra(EXTRA_RESULT_SELECTION_PATH, selectedPaths);
-            result.putExtra(EXTRA_RESULT_ORIGINAL_ENABLE, mOriginalEnable);
-            setResult(RESULT_OK, result);
-            finish();
-        } else if (v.getId() == R.id.originalLayout) {
-            int count = countOverMaxSize();
-            if (count > 0) {
-                IncapableDialog incapableDialog = IncapableDialog.newInstance("",
-                        getString(R.string.error_over_original_count, count, mSpec.originalMaxSize));
-                incapableDialog.show(getSupportFragmentManager(),
-                        IncapableDialog.class.getName());
-                return;
-            }
-
-            mOriginalEnable = !mOriginalEnable;
-            mOriginal.setChecked(mOriginalEnable);
-
-            if (mSpec.onCheckedListener != null) {
-                mSpec.onCheckedListener.onCheck(mOriginalEnable);
-            }
         }
     }
 
@@ -360,7 +264,7 @@ public class MatisseActivity extends AppCompatActivity implements
 
     @Override
     public void onNothingSelected(AdapterView<?> parent) {
-
+        //Do nothing
     }
 
     @Override
@@ -368,19 +272,15 @@ public class MatisseActivity extends AppCompatActivity implements
         mAlbumsAdapter.swapCursor(cursor);
         // select default album.
         Handler handler = new Handler(Looper.getMainLooper());
-        handler.post(new Runnable() {
-
-            @Override
-            public void run() {
-                cursor.moveToPosition(mAlbumCollection.getCurrentSelection());
-                mAlbumsSpinner.setSelection(MatisseActivity.this,
-                        mAlbumCollection.getCurrentSelection());
-                Album album = Album.valueOf(cursor);
-                if (album.isAll() && SelectionSpec.getInstance().capture) {
-                    album.addCaptureCount();
-                }
-                onAlbumSelected(album);
+        handler.post(() -> {
+            cursor.moveToPosition(mAlbumCollection.getCurrentSelection());
+            mAlbumsSpinner.setSelection(BditMatisseActivity.this,
+                    mAlbumCollection.getCurrentSelection());
+            Album album = Album.valueOf(cursor);
+            if (album.isAll() && SelectionSpec.getInstance().capture) {
+                album.addCaptureCount();
             }
+            onAlbumSelected(album);
         });
     }
 
@@ -396,18 +296,17 @@ public class MatisseActivity extends AppCompatActivity implements
         } else {
             mContainer.setVisibility(View.VISIBLE);
             mEmptyView.setVisibility(View.GONE);
-            Fragment fragment = MediaSelectionFragment.newInstance(album);
+            Fragment fragment = BditMediaSelectionFragment.newInstance(album);
             getSupportFragmentManager()
                     .beginTransaction()
-                    .replace(R.id.container, fragment, MediaSelectionFragment.class.getSimpleName())
+                    .replace(R.id.container, fragment, BditMediaSelectionFragment.class.getSimpleName())
                     .commitAllowingStateLoss();
         }
     }
 
     @Override
     public void onUpdate() {
-        // notify bottom toolbar that check state changed.
-        updateBottomToolbar();
+        this.optionMenu.setEnabled(mSelectedCollection.count() > 0);
 
         if (mSpec.onSelectedListener != null) {
             mSpec.onSelectedListener.onSelected(
@@ -435,6 +334,15 @@ public class MatisseActivity extends AppCompatActivity implements
         if (mMediaStoreCompat != null) {
             mMediaStoreCompat.dispatchCaptureIntent(this, REQUEST_CODE_CAPTURE);
         }
+    }
+
+    public boolean onCreateOptionsMenu(Menu menu) {
+        MenuInflater inflater = getMenuInflater();
+        inflater.inflate(R.menu.menu_next, menu);
+        this.optionMenu = menu.findItem(R.id.action_next);
+        this.optionMenu.setTitle("Next");
+        this.optionMenu.setEnabled(false);
+        return true;
     }
 
 }

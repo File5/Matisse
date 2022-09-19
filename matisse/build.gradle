@@ -23,11 +23,11 @@ android {
     buildToolsVersion '29.0.2'
 
     defaultConfig {
-        minSdkVersion 14
+        minSdkVersion 16
         targetSdkVersion 29
 
-        versionCode 19
-        versionName "0.5.3-beta308"
+        versionCode 21
+        versionName "0.5.3-beta310"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -35,6 +35,13 @@ android {
     }
     lintOptions {
         abortOnError false
+    }
+    sourceSets {
+        main {
+            res {
+                srcDirs 'src/main/res', 'src/main/res-blockdit'
+            }
+        }
     }
 }
 
