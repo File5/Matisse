@@ -14,7 +14,8 @@
  * limitations under the License.
  */
 apply plugin: 'com.android.library'
-apply plugin: 'com.novoda.bintray-release'
+//apply plugin: 'com.novoda.bintray-release'
+apply plugin: 'maven-publish'
 apply plugin: 'checkstyle'
 
 android {
@@ -24,6 +25,9 @@ android {
     defaultConfig {
         minSdkVersion 14
         targetSdkVersion 29
+
+        versionCode 19
+        versionName "0.5.3-beta308"
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
@@ -35,7 +39,7 @@ android {
 }
 
 dependencies {
-    implementation fileTree(dir: 'libs', include: ['*.jar'])
+    //implementation fileTree(dir: 'libs', include: ['*.jar'])
 
     implementation "androidx.appcompat:appcompat:1.1.0"
     implementation "androidx.annotation:annotation:1.1.0"
@@ -48,14 +52,83 @@ dependencies {
 
 // jcenter configuration for novoda's bintray-release
 // $ ./gradlew clean build bintrayUpload -PbintrayUser=BINTRAY_USERNAME -PbintrayKey=BINTRAY_KEY -PdryRun=false
-publish {
-    userOrg = 'zhihu'
-    groupId = 'com.zhihu.android'
-    artifactId = 'matisse'
-    publishVersion = '0.5.3-beta3'
-    desc = 'A well-designed local image selector for Android'
-    website = 'https://www.zhihu.com/'
+//publish {
+//    userOrg = 'zhihu'
+//    groupId = 'com.zhihu.android'
+//    artifactId = 'matisse'
+//    publishVersion = '0.5.3-beta3'
+//    desc = 'A well-designed local image selector for Android'
+//    website = 'https://www.zhihu.com/'
+//}
+
+publishing {
+    def githubProperties = new Properties()
+    def githubPropertiesFile = "github.properties"
+    if (rootProject.file(githubPropertiesFile).exists()) {
+        //Set env variable GPR_USER & GPR_API_KEY if not adding a properties file
+        githubProperties.load(new FileInputStream(rootProject.file(githubPropertiesFile)))
+    }
+
+    repositories {
+        maven {
+            name = "GitHubPackages"
+            /** Configure path of your package repository on Github
+             ** Replace GITHUB_USERID with your/organisation Github userID
+             ** and REPOSITORY with the repository name on GitHub
+             */
+            url = uri("https://maven.pkg.github.com/ltman/matisse")
+            credentials {
+                /** Create github.properties in root project folder file with
+                 ** gpr.usr=GITHUB_USER_ID & gpr.key=PERSONAL_ACCESS_TOKEN
+                 ** Set env variable GPR_USER & GPR_API_KEY if not adding a properties file**/
+
+                username = githubProperties['gpr.usr'] ?: System.getenv("GPR_USER")
+                password = githubProperties['gpr.key'] ?: System.getenv("GPR_API_KEY")
+            }
+        }
+    }
+    publications {
+        android.libraryVariants.all { variant ->
+            ////def filename = "${archivesBaseName}-${variant.baseName}-${android.defaultConfig.versionName}"
+            if (variant.buildType.name == "debug") {
+                def filename = "${archivesBaseName}-${variant.baseName}"
+                println("Filename: $filename")
+                "${variant.name}"(MavenPublication) {
+                    //println(variant.name)
+                    groupId 'com.ltman'
+                    artifactId = "matisse"
+                    version = "${android.defaultConfig.versionName}"
+
+                    artifact file("$buildDir/outputs/aar/${filename}.aar")
+
+                    pom.withXml {
+                        // for dependencies and exclusions
+                        def dependenciesNode = asNode().appendNode('dependencies')
+                        def configurationNames = ["implementation", "api", "runtimeOnly"]
+                        configurationNames.each { confName ->
+                            configurations[confName].allDependencies.each {
+                                def dependencyNode = dependenciesNode.appendNode('dependency')
+                                dependencyNode.appendNode('groupId', it.group)
+                                dependencyNode.appendNode('artifactId', it.name)
+                                dependencyNode.appendNode('version', it.version)
+                                println("dependency: ${it}")
+//                                if (it.excludeRules.size() > 0) {
+//                                    def exclusionsNode = dependencyNode.appendNode('exclusions')
+//                                    it.excludeRules.each { rule ->
+//                                        def exclusionNode = exclusionsNode.appendNode('exclusion')
+//                                        exclusionNode.appendNode('groupId', rule.group)
+//                                        exclusionNode.appendNode('artifactId', rule.module)
+//                                    }
+//                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
 }
+publish.dependsOn(assemble)
 
 task javadoc(type: Javadoc) {
     options.encoding = "utf-8"

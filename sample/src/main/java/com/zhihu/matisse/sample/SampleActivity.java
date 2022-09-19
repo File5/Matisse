@@ -20,6 +20,7 @@ import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -35,7 +36,9 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.tbruyelle.rxpermissions2.RxPermissions;
 import com.zhihu.matisse.Matisse;
 import com.zhihu.matisse.MimeType;
+import com.zhihu.matisse.engine.ImageEngine;
 import com.zhihu.matisse.engine.impl.GlideEngine;
+import com.zhihu.matisse.engine.impl.NativeAPI29Engine;
 import com.zhihu.matisse.engine.impl.PicassoEngine;
 import com.zhihu.matisse.filter.Filter;
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
@@ -79,6 +82,12 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
     // </editor-fold>
 
     private void startAction(View v) {
+        ImageEngine imageEngine;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            imageEngine = new NativeAPI29Engine();
+        } else {
+            imageEngine = new GlideEngine();
+        }
         switch (v.getId()) {
             case R.id.zhihu:
                 Matisse.from(SampleActivity.this)
@@ -93,7 +102,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                                 getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
                         .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
                         .thumbnailScale(0.85f)
-                        .imageEngine(new GlideEngine())
+                        .imageEngine(imageEngine)
                         .setOnSelectedListener((uriList, pathList) -> {
                             Log.e("onSelected", "onSelected: pathList=" + pathList);
                         })
@@ -128,7 +137,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                                 getResources().getDimensionPixelSize(R.dimen.grid_expected_size))
                         .restrictOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT)
                         .thumbnailScale(0.85f)
-                        .imageEngine(new GlideEngine())
+                        .imageEngine(imageEngine)
                         .showSingleMediaType(true)
                         .originalEnable(true)
                         .maxOriginalSize(10)

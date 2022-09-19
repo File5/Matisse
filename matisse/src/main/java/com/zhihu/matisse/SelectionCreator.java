@@ -364,6 +364,14 @@ public final class SelectionCreator {
         }
     }
 
+    public Intent getIntent() {
+        Activity activity = mMatisse.getActivity();
+        if (activity == null) {
+            return null;
+        }
+        return new Intent(activity, MatisseActivity.class);
+    }
+
     public SelectionCreator showPreview(boolean showPreview) {
         mSelectionSpec.showPreview = showPreview;
         return this;

@@ -44,3 +44,5 @@ captures/
 
 # Keystore files
 *.jks
+
+github.properties

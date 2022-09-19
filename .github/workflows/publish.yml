@@ -1,0 +1,23 @@
+name: publish
+
+on:
+  push:
+    branches: [ ltman/production ]
+
+jobs:
+  build:
+    name: Publish
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+      - name: Setup JDK
+        uses: actions/setup-java@v2
+        with:
+          distribution: 'zulu'
+          java-version: '11'
+      - name: Publish
+        run: bash ./gradlew :matisse:publish
+        env:
+          GPR_USER: ${{ secrets.GPR_USR }}
+          GPR_API_KEY: ${{ secrets.GPR_KEY }}
