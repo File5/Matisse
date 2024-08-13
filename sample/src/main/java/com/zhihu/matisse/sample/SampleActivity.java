@@ -89,12 +89,13 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
         } else {
             imageEngine = new GlideEngine();
         }
-        switch (v.getId()) {
-            case R.id.ltman:
+        final int vId = v.getId();
+        {
+            if (vId == R.id.ltman) {
                 Matisse.from(SampleActivity.this)
                         .choose(MimeType.of(MimeType.JPEG, MimeType.PNG))
                         .countable(true)
-                        .theme(R.style.Matisse_Blockdit)
+                        .theme(com.zhihu.matisse.R.style.Matisse_Blockdit)
                         .capture(true)
                         .captureStrategy(
                                 new CaptureStrategy(true, "com.zhihu.matisse.sample.fileprovider", "test"))
@@ -104,8 +105,8 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                         .thumbnailScale(1f)
                         .showPreview(false)
                         .forResult(REQUEST_CODE_CHOOSE);
-                break;
-            case R.id.zhihu:
+            }
+            if (vId == R.id.zhihu) {
                 Matisse.from(SampleActivity.this)
                         .choose(MimeType.ofImage(), false)
                         .countable(true)
@@ -129,11 +130,11 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                             Log.e("isChecked", "onCheck: isChecked=" + isChecked);
                         })
                         .forResult(REQUEST_CODE_CHOOSE);
-                break;
-            case R.id.dracula:
+            }
+            if (vId == R.id.dracula) {
                 Matisse.from(SampleActivity.this)
                         .choose(MimeType.ofImage())
-                        .theme(R.style.Matisse_Dracula)
+                        .theme(com.zhihu.matisse.R.style.Matisse_Dracula)
                         .countable(false)
                         .addFilter(new GifSizeFilter(320, 320, 5 * Filter.K * Filter.K))
                         .maxSelectable(9)
@@ -141,8 +142,8 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                         .maxOriginalSize(10)
                         .imageEngine(new PicassoEngine())
                         .forResult(REQUEST_CODE_CHOOSE);
-                break;
-            case R.id.only_gif:
+            }
+            if (vId == R.id.only_gif) {
                 Matisse.from(SampleActivity.this)
                         .choose(MimeType.of(MimeType.GIF), false)
                         .countable(true)
@@ -158,9 +159,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                         .maxOriginalSize(10)
                         .autoHideToolbarOnSingleTap(true)
                         .forResult(REQUEST_CODE_CHOOSE);
-                break;
-            default:
-                break;
+            }
         }
         mAdapter.setData(null, null);
     }

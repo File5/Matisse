@@ -16,6 +16,8 @@
 apply plugin: 'com.android.application'
 
 android {
+    namespace 'com.zhihu.matisse.sample'
+
     compileSdkVersion 29
 
     defaultConfig {
