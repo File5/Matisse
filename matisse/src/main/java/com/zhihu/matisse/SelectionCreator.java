@@ -36,6 +36,7 @@ import androidx.fragment.app.FragmentResultListener;
 
 import com.zhihu.matisse.engine.ImageEngine;
 import com.zhihu.matisse.filter.Filter;
+import com.zhihu.matisse.filter.PreFilter;
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
 import com.zhihu.matisse.internal.entity.SelectionSpec;
 import com.zhihu.matisse.internal.utils.MediaStoreCompat;
@@ -164,7 +165,20 @@ public final class SelectionCreator {
     }
 
     /**
+     * Add a post-selection filter that prevents selecting items that don't meet criteria.
+     * Items are still visible in the grid but cannot be selected.
+     * Alias for {@link #addFilter(Filter)}.
+     *
+     * @param filter {@link Filter}
+     * @return {@link SelectionCreator} for fluent API.
+     */
+    public SelectionCreator addPostFilter(@NonNull Filter filter) {
+        return addFilter(filter);
+    }
+
+    /**
      * Add filter to filter each selecting item.
+     * Items are still visible in the grid but cannot be selected.
      *
      * @param filter {@link Filter}
      * @return {@link SelectionCreator} for fluent API.
@@ -175,6 +189,26 @@ public final class SelectionCreator {
         }
         if (filter == null) throw new IllegalArgumentException("filter cannot be null");
         mSelectionSpec.filters.add(filter);
+        return this;
+    }
+
+    /**
+     * Add a pre-filter that hides items from the grid entirely before they are shown.
+     * Unlike {@link #addFilter(Filter)} which blocks selection but still displays items,
+     * pre-filters remove items from the grid so the user never sees them.
+     * <p>
+     * Pre-filters are evaluated asynchronously during loading. A progress indicator
+     * is shown while scanning.
+     *
+     * @param preFilter {@link PreFilter}
+     * @return {@link SelectionCreator} for fluent API.
+     */
+    public SelectionCreator addPreFilter(@NonNull PreFilter preFilter) {
+        if (mSelectionSpec.preFilters == null) {
+            mSelectionSpec.preFilters = new ArrayList<>();
+        }
+        if (preFilter == null) throw new IllegalArgumentException("preFilter cannot be null");
+        mSelectionSpec.preFilters.add(preFilter);
         return this;
     }
 

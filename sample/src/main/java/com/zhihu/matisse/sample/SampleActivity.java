@@ -148,6 +148,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                     .theme(com.zhihu.matisse.R.style.Matisse_Dracula)
                     .countable(false)
                     .showPreview(false)
+                    .addPreFilter(new GpsPreFilter(true))
                     //.addFilter(new GifSizeFilter(320, 320, 5 * Filter.K * Filter.K))
                     .maxSelectable(9)
                     //.originalEnable(true)
