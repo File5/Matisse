@@ -37,6 +37,7 @@ import androidx.fragment.app.FragmentResultListener;
 import com.zhihu.matisse.engine.ImageEngine;
 import com.zhihu.matisse.filter.Filter;
 import com.zhihu.matisse.filter.PreFilter;
+import com.zhihu.matisse.filter.PreFilterCache;
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
 import com.zhihu.matisse.internal.entity.SelectionSpec;
 import com.zhihu.matisse.internal.utils.MediaStoreCompat;
@@ -209,6 +210,35 @@ public final class SelectionCreator {
         }
         if (preFilter == null) throw new IllegalArgumentException("preFilter cannot be null");
         mSelectionSpec.preFilters.add(preFilter);
+        return this;
+    }
+
+    /**
+     * Set a custom {@link PreFilterCache} implementation for caching pre-filter results.
+     * The default is {@link com.zhihu.matisse.filter.InMemoryPreFilterCache}.
+     * Pass {@code null} to disable caching entirely.
+     * <p>
+     * Custom implementations can be backed by Room/SQLite, bounded LRU, disk storage, etc.
+     *
+     * @param cache A {@link PreFilterCache} implementation, or null to disable.
+     * @return {@link SelectionCreator} for fluent API.
+     */
+    public SelectionCreator preFilterCacheImpl(@Nullable PreFilterCache cache) {
+        mSelectionSpec.preFilterCache = cache;
+        return this;
+    }
+
+    /**
+     * Number of items to process before posting an incremental update to the grid.
+     * Smaller values make items appear sooner but cause more adapter refreshes.
+     * Default is 50.
+     *
+     * @param batchSize Number of items per batch. Must be at least 1.
+     * @return {@link SelectionCreator} for fluent API.
+     */
+    public SelectionCreator preFilterBatchSize(int batchSize) {
+        if (batchSize < 1) throw new IllegalArgumentException("batchSize must be >= 1");
+        mSelectionSpec.preFilterBatchSize = batchSize;
         return this;
     }
 

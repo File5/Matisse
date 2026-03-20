@@ -25,7 +25,9 @@ import com.zhihu.matisse.R;
 import com.zhihu.matisse.engine.ImageEngine;
 import com.zhihu.matisse.engine.impl.GlideEngine;
 import com.zhihu.matisse.filter.Filter;
+import com.zhihu.matisse.filter.InMemoryPreFilterCache;
 import com.zhihu.matisse.filter.PreFilter;
+import com.zhihu.matisse.filter.PreFilterCache;
 import com.zhihu.matisse.listener.OnCheckedListener;
 import com.zhihu.matisse.listener.OnSelectedListener;
 
@@ -46,6 +48,8 @@ public final class SelectionSpec {
     public int maxVideoSelectable;
     public List<Filter> filters;
     public List<PreFilter> preFilters;
+    public PreFilterCache preFilterCache;
+    public int preFilterBatchSize;
     public boolean capture;
     public CaptureStrategy captureStrategy;
     public int spanCount;
@@ -85,6 +89,8 @@ public final class SelectionSpec {
         maxVideoSelectable = 0;
         filters = null;
         preFilters = null;
+        preFilterCache = new InMemoryPreFilterCache();
+        preFilterBatchSize = 50;
         capture = false;
         captureStrategy = null;
         spanCount = 3;

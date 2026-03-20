@@ -37,6 +37,9 @@ import androidx.recyclerview.widget.RecyclerView;
 
 import com.zhihu.matisse.R;
 import com.zhihu.matisse.filter.PreFilter;
+import com.zhihu.matisse.filter.PreFilterCache;
+
+import androidx.annotation.Nullable;
 import com.zhihu.matisse.internal.entity.Album;
 import com.zhihu.matisse.internal.entity.Item;
 import com.zhihu.matisse.internal.entity.SelectionSpec;
@@ -176,7 +179,10 @@ public class MediaSelectionFragment extends Fragment implements
 
         final int version = ++mPreFilterVersion;
         final Context context = getContext().getApplicationContext();
-        final List<PreFilter> preFilters = new ArrayList<>(SelectionSpec.getInstance().preFilters);
+        final SelectionSpec spec = SelectionSpec.getInstance();
+        final List<PreFilter> preFilters = new ArrayList<>(spec.preFilters);
+        @Nullable final PreFilterCache cache = spec.preFilterCache;
+        final int batchSize = spec.preFilterBatchSize;
 
         // Snapshot cursor data on main thread to avoid threading issues
         final List<Object[]> rows = new ArrayList<>();
@@ -198,7 +204,10 @@ public class MediaSelectionFragment extends Fragment implements
         }
 
         new Thread(() -> {
-            MatrixCursor filtered = new MatrixCursor(MEDIA_COLUMNS);
+            List<Object[]> acceptedRows = new ArrayList<>();
+            Handler mainHandler = new Handler(Looper.getMainLooper());
+            int processedSinceLastBatch = 0;
+            boolean firstBatchPosted = false;
 
             for (Object[] row : rows) {
                 if (version != mPreFilterVersion) return;
@@ -206,40 +215,81 @@ public class MediaSelectionFragment extends Fragment implements
                 long id = (long) row[0];
                 // Always keep capture placeholder
                 if (id == Item.ITEM_ID_CAPTURE) {
-                    filtered.addRow(row);
+                    acceptedRows.add(row);
                     continue;
                 }
 
-                // Build Item from row via single-row cursor
-                MatrixCursor singleRow = new MatrixCursor(MEDIA_COLUMNS);
-                singleRow.addRow(row);
-                singleRow.moveToFirst();
-                Item item = Item.valueOf(singleRow);
-                singleRow.close();
+                // Check cache first
+                boolean accepted;
+                Boolean cached = cache != null ? cache.get(id) : null;
+                if (cached != null) {
+                    accepted = cached;
+                } else {
+                    // Build Item from row via single-row cursor
+                    MatrixCursor singleRow = new MatrixCursor(MEDIA_COLUMNS);
+                    singleRow.addRow(row);
+                    singleRow.moveToFirst();
+                    Item item = Item.valueOf(singleRow);
+                    singleRow.close();
 
-                boolean accepted = true;
-                for (PreFilter pf : preFilters) {
-                    if (!pf.accept(context, item)) {
-                        accepted = false;
-                        break;
+                    accepted = true;
+                    for (PreFilter pf : preFilters) {
+                        if (!pf.accept(context, item)) {
+                            accepted = false;
+                            break;
+                        }
+                    }
+                    if (cache != null) {
+                        cache.put(id, accepted);
                     }
                 }
+
                 if (accepted) {
-                    filtered.addRow(row);
+                    acceptedRows.add(row);
+                }
+
+                processedSinceLastBatch++;
+                if (processedSinceLastBatch >= batchSize) {
+                    postBatch(mainHandler, version, acceptedRows, !firstBatchPosted);
+                    firstBatchPosted = true;
+                    processedSinceLastBatch = 0;
                 }
             }
 
             if (version != mPreFilterVersion) return;
 
-            new Handler(Looper.getMainLooper()).post(() -> {
+            // Final batch
+            postBatch(mainHandler, version, acceptedRows, !firstBatchPosted);
+            // Hide progress after final batch
+            mainHandler.post(() -> {
                 if (version != mPreFilterVersion) return;
                 if (getActivity() != null && !isDetached()) {
-                    mAdapter.swapCursor(filtered);
                     mProgressBar.setVisibility(View.GONE);
-                    mRecyclerView.setVisibility(View.VISIBLE);
                 }
             });
         }).start();
+    }
+
+    private void postBatch(Handler mainHandler, int version,
+                           List<Object[]> acceptedRows, boolean isFirstBatch) {
+        final List<Object[]> snapshot = new ArrayList<>(acceptedRows);
+        final boolean first = isFirstBatch;
+
+        mainHandler.post(() -> {
+            if (version != mPreFilterVersion) return;
+            if (getActivity() == null || isDetached()) return;
+
+            MatrixCursor batchCursor = new MatrixCursor(MEDIA_COLUMNS);
+            for (Object[] row : snapshot) {
+                batchCursor.addRow(row);
+            }
+            mAdapter.swapCursor(batchCursor);
+
+            if (first) {
+                mRecyclerView.setVisibility(View.VISIBLE);
+                mProgressBar.setVisibility(View.GONE);
+            }
+        });
     }
 
     @Override
