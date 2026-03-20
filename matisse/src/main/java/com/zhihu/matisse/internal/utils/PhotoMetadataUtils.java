@@ -24,9 +24,12 @@ import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.Build;
 import android.provider.MediaStore;
 import android.util.DisplayMetrics;
 import android.util.Log;
+
+import androidx.annotation.Nullable;
 
 import com.zhihu.matisse.MimeType;
 import com.zhihu.matisse.R;
@@ -165,6 +168,32 @@ public final class PhotoMetadataUtils {
         int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
         return orientation == ExifInterface.ORIENTATION_ROTATE_90
                 || orientation == ExifInterface.ORIENTATION_ROTATE_270;
+    }
+
+    @Nullable
+    public static float[] getGpsLatLong(Context context, Uri uri) {
+        if (uri == null) return null;
+        InputStream is = null;
+        try {
+            Uri effectiveUri = uri;
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                effectiveUri = MediaStore.setRequireOriginal(effectiveUri);
+            }
+            is = context.getContentResolver().openInputStream(effectiveUri);
+            if (is == null) return null;
+            ExifInterface exif = new ExifInterface(is);
+            float[] latLong = new float[2];
+            if (exif.getLatLong(latLong)) {
+                return latLong;
+            }
+        } catch (IOException | SecurityException e) {
+            Log.e(TAG, "Failed to read GPS from EXIF: " + uri, e);
+        } finally {
+            if (is != null) {
+                try { is.close(); } catch (IOException e) { /* ignore */ }
+            }
+        }
+        return null;
     }
 
     public static float getSizeInMB(long sizeInBytes) {

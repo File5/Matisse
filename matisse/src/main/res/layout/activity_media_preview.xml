@@ -25,6 +25,20 @@
         android:layout_height="match_parent"
         android:background="@android:color/black" />
 
+    <TextView
+        android:id="@+id/location_info"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_above="@id/bottom_toolbar"
+        android:background="#88000000"
+        android:ellipsize="end"
+        android:gravity="center"
+        android:maxLines="2"
+        android:padding="8dp"
+        android:textColor="#FFFFFF"
+        android:textSize="12sp"
+        android:visibility="gone" />
+
     <FrameLayout
         android:id="@+id/bottom_toolbar"
         android:layout_width="match_parent"

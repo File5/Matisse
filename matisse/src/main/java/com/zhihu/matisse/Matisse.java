@@ -16,6 +16,7 @@
 package com.zhihu.matisse;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
 
@@ -27,6 +28,7 @@ import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
 
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
+import com.zhihu.matisse.internal.utils.PhotoMetadataUtils;
 import com.zhihu.matisse.ui.MatisseActivity;
 
 import java.lang.ref.WeakReference;
@@ -114,6 +116,18 @@ public final class Matisse {
    */
   public static boolean obtainOriginalState(Intent data) {
     return data.getBooleanExtra(MatisseActivity.EXTRA_RESULT_ORIGINAL_ENABLE, false);
+  }
+
+  /**
+   * Obtain GPS coordinates from the EXIF data of a media Uri.
+   *
+   * @param context Context to access ContentResolver.
+   * @param uri     Content Uri of the media file.
+   * @return float array [latitude, longitude], or null if unavailable.
+   */
+  @Nullable
+  public static float[] obtainGpsLocation(Context context, Uri uri) {
+    return PhotoMetadataUtils.getGpsLatLong(context, uri);
   }
 
   /**

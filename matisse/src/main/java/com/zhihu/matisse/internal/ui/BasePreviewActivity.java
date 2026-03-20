@@ -25,6 +25,8 @@ import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
+import java.util.Locale;
+
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.graphics.Insets;
@@ -66,6 +68,7 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
     protected TextView mButtonBack;
     protected TextView mButtonApply;
     protected TextView mSize;
+    protected TextView mLocationInfo;
 
     protected int mPreviousPos = -1;
     protected boolean mOriginalEnable;
@@ -116,6 +119,7 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
         mButtonBack = (TextView) findViewById(R.id.button_back);
         mButtonApply = (TextView) findViewById(R.id.button_apply);
         mSize = (TextView) findViewById(R.id.size);
+        mLocationInfo = (TextView) findViewById(R.id.location_info);
         mButtonBack.setOnClickListener(this);
         mButtonApply.setOnClickListener(this);
 
@@ -229,6 +233,12 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
                     .translationYBy(-mBottomToolbar.getMeasuredHeight())
                     .setInterpolator(new FastOutSlowInInterpolator())
                     .start();
+            if (mLocationInfo.getVisibility() == View.VISIBLE) {
+                mLocationInfo.animate()
+                        .translationYBy(-mBottomToolbar.getMeasuredHeight())
+                        .setInterpolator(new FastOutSlowInInterpolator())
+                        .start();
+            }
         } else {
             mTopToolbar.animate()
                     .setInterpolator(new FastOutSlowInInterpolator())
@@ -238,6 +248,12 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
                     .setInterpolator(new FastOutSlowInInterpolator())
                     .translationYBy(mBottomToolbar.getMeasuredHeight())
                     .start();
+            if (mLocationInfo.getVisibility() == View.VISIBLE) {
+                mLocationInfo.animate()
+                        .translationYBy(mBottomToolbar.getMeasuredHeight())
+                        .setInterpolator(new FastOutSlowInInterpolator())
+                        .start();
+            }
         }
 
         mIsToolbarHide = !mIsToolbarHide;
@@ -355,6 +371,28 @@ public abstract class BasePreviewActivity extends AppCompatActivity implements V
         } else if (mSpec.originalable) {
             mOriginalLayout.setVisibility(View.VISIBLE);
         }
+
+        updateLocationInfo(item);
+    }
+
+    private void updateLocationInfo(Item item) {
+        if (!item.isImage()) {
+            mLocationInfo.setVisibility(View.GONE);
+            return;
+        }
+        new Thread(() -> {
+            float[] latLong = PhotoMetadataUtils.getGpsLatLong(
+                    BasePreviewActivity.this, item.getContentUri());
+            runOnUiThread(() -> {
+                if (latLong != null) {
+                    mLocationInfo.setVisibility(View.VISIBLE);
+                    mLocationInfo.setText(String.format(Locale.US,
+                            "GPS: %.6f, %.6f", latLong[0], latLong[1]));
+                } else {
+                    mLocationInfo.setVisibility(View.GONE);
+                }
+            });
+        }).start();
     }
 
     protected void sendBackResult(boolean apply) {

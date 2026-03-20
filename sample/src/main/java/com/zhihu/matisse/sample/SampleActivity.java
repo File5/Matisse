@@ -45,6 +45,7 @@ import com.zhihu.matisse.filter.Filter;
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class SampleActivity extends AppCompatActivity implements View.OnClickListener {
@@ -101,6 +102,7 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                 Manifest.permission.WRITE_EXTERNAL_STORAGE,
                 Manifest.permission.READ_MEDIA_IMAGES,
                 Manifest.permission.READ_MEDIA_VIDEO,
+                Manifest.permission.ACCESS_MEDIA_LOCATION,
         });
     }
 
@@ -197,6 +199,16 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
 
             holder.mUri.setAlpha(position % 2 == 0 ? 1.0f : 0.54f);
             holder.mPath.setAlpha(position % 2 == 0 ? 1.0f : 0.54f);
+
+            float[] latLong = Matisse.obtainGpsLocation(
+                    holder.itemView.getContext(), mUris.get(position));
+            if (latLong != null) {
+                holder.mLocation.setVisibility(View.VISIBLE);
+                holder.mLocation.setText(String.format(Locale.US,
+                        "GPS: %.6f, %.6f", latLong[0], latLong[1]));
+            } else {
+                holder.mLocation.setVisibility(View.GONE);
+            }
         }
 
         @Override
@@ -208,11 +220,13 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
 
             private TextView mUri;
             private TextView mPath;
+            private TextView mLocation;
 
             UriViewHolder(View contentView) {
                 super(contentView);
                 mUri = (TextView) contentView.findViewById(R.id.uri);
                 mPath = (TextView) contentView.findViewById(R.id.path);
+                mLocation = (TextView) contentView.findViewById(R.id.location);
             }
         }
     }
