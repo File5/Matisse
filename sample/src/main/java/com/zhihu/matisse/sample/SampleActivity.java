@@ -45,8 +45,12 @@ import com.zhihu.matisse.filter.Filter;
 import com.zhihu.matisse.internal.entity.CaptureStrategy;
 
 import java.util.List;
+import java.util.Map;
 
 public class SampleActivity extends AppCompatActivity implements View.OnClickListener {
+
+    private ActivityResultLauncher<String[]> permissionsLauncher;
+
     private UriAdapter mAdapter;
     private Matisse matisse;
     private final ActivityResultLauncher<Intent> captureLauncher = registerForActivityResult(
@@ -82,12 +86,22 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(mAdapter = new UriAdapter());
 
+        permissionsLauncher = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), permissions -> {
+        });
+
         matisse = Matisse.from(SampleActivity.this);
             //.registerCapture(result -> {
             //    Intent data = result.getData();
             //    mAdapter.setData(Matisse.obtainResult(data), Matisse.obtainPathResult(data));
             //    Log.e("OnActivityResult ", String.valueOf(Matisse.obtainOriginalState(data)));
             //});
+
+        permissionsLauncher.launch(new String[] {
+                Manifest.permission.READ_EXTERNAL_STORAGE,
+                Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                Manifest.permission.READ_MEDIA_IMAGES,
+                Manifest.permission.READ_MEDIA_VIDEO,
+        });
     }
 
     // <editor-fold defaultstate="collapsed" desc="onClick">
@@ -131,10 +145,11 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                     .choose(MimeType.ofImage())
                     .theme(com.zhihu.matisse.R.style.Matisse_Dracula)
                     .countable(false)
-                    .addFilter(new GifSizeFilter(320, 320, 5 * Filter.K * Filter.K))
+                    .showPreview(false)
+                    //.addFilter(new GifSizeFilter(320, 320, 5 * Filter.K * Filter.K))
                     .maxSelectable(9)
-                    .originalEnable(true)
-                    .maxOriginalSize(10)
+                    //.originalEnable(true)
+                    //.maxOriginalSize(10)
                     .imageEngine(new PicassoEngine())
                     .forResult(pickerLauncher);
         } else if (id == R.id.only_gif) {
