@@ -15,13 +15,10 @@
  */
 package com.zhihu.matisse.sample;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.Activity;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -38,6 +35,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import com.zhihu.matisse.Matisse;
+import com.zhihu.matisse.MatissePermissions;
 import com.zhihu.matisse.MimeType;
 import com.zhihu.matisse.engine.impl.GlideEngine;
 import com.zhihu.matisse.engine.impl.PicassoEngine;
@@ -87,23 +85,30 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         recyclerView.setAdapter(mAdapter = new UriAdapter());
 
-        permissionsLauncher = registerForActivityResult(new ActivityResultContracts.RequestMultiplePermissions(), permissions -> {
+        permissionsLauncher = MatissePermissions.register(this, (state, deniedPermissions) -> {
+            switch (state) {
+                case GRANTED:
+                    Log.d("Permissions", "All permissions granted");
+                    break;
+                case DENIED:
+                    Toast.makeText(this,
+                            "Some permissions denied: " + deniedPermissions,
+                            Toast.LENGTH_LONG).show();
+                    break;
+                case PERMANENTLY_DENIED:
+                    Toast.makeText(this,
+                            "Permissions permanently denied. Please enable in Settings.",
+                            Toast.LENGTH_LONG).show();
+                    MatissePermissions.openAppSettings(this);
+                    break;
+            }
         });
 
         matisse = Matisse.from(SampleActivity.this);
-            //.registerCapture(result -> {
-            //    Intent data = result.getData();
-            //    mAdapter.setData(Matisse.obtainResult(data), Matisse.obtainPathResult(data));
-            //    Log.e("OnActivityResult ", String.valueOf(Matisse.obtainOriginalState(data)));
-            //});
 
-        permissionsLauncher.launch(new String[] {
-                Manifest.permission.READ_EXTERNAL_STORAGE,
-                Manifest.permission.WRITE_EXTERNAL_STORAGE,
-                Manifest.permission.READ_MEDIA_IMAGES,
-                Manifest.permission.READ_MEDIA_VIDEO,
-                Manifest.permission.ACCESS_MEDIA_LOCATION,
-        });
+        if (!MatissePermissions.isGranted(this)) {
+            MatissePermissions.request(permissionsLauncher);
+        }
     }
 
     // <editor-fold defaultstate="collapsed" desc="onClick">
