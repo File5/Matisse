@@ -24,10 +24,10 @@ import android.net.Uri;
 import android.os.Build;
 import android.provider.Settings;
 
+import androidx.activity.ComponentActivity;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.annotation.NonNull;
-import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
@@ -181,7 +181,7 @@ public final class MatissePermissions {
      */
     @NonNull
     public static ActivityResultLauncher<String[]> register(
-            @NonNull AppCompatActivity activity,
+            @NonNull ComponentActivity activity,
             @NonNull Callback callback) {
         return activity.registerForActivityResult(
                 new ActivityResultContracts.RequestMultiplePermissions(),
