@@ -90,6 +90,12 @@ public class SampleActivity extends AppCompatActivity implements View.OnClickLis
                 case GRANTED:
                     Log.d("Permissions", "All permissions granted");
                     break;
+                case PARTIAL:
+                    Log.d("Permissions", "Partial photo access granted");
+                    Toast.makeText(this,
+                            "Limited photo access granted",
+                            Toast.LENGTH_SHORT).show();
+                    break;
                 case DENIED:
                     Toast.makeText(this,
                             "Some permissions denied: " + deniedPermissions,
